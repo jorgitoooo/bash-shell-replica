@@ -2,7 +2,9 @@
  
 # Project Information: 
   Spring '19
+  
   Ryan Meoni 
+  
   Jorge L. Garcia 
   
 # Assignment 4
