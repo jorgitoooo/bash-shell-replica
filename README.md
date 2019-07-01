@@ -2,8 +2,8 @@
  
 # Project Information: 
   Spring '19
-  Ryan Meoni (ID# 861203679)
-  Jorge L. Garcia (ID# 862089506)
+  Ryan Meoni 
+  Jorge L. Garcia 
   
 # Assignment 4
 
