@@ -1,51 +1,150 @@
-# CS 100 RShell
- 
-# Project Information: 
-  Spring '19
+# Bash Shell Clone 
+## Developed by: Jorge L. Garcia & Ryan Meoni
+#
+
+# Introduction
+
+RShell is an interactive shell where the user inputs their command(s) and our program runs a series of parsing functions on the input which will create a composite object tree from that line of command(s). Once the tree is created the commands will be forked and ran in child processes. RShell has been implemented using the composite design pattern.
+
+
+# Diagram
+
+![Composite UML](/images/composite_UML.png)
+
+# Classes
+
+**Line** :
+ * This will be the abstract class that all classes must implement. All implementations of ```Execute()``` will return a 1 upon successful execution and 0 otherwise. All implementations of ```Exit()``` will deal with system exit calls.
+
+**Command** :
+ * This class will contain the command that was used along with a vector containing the arguments that were passed to that command. The execute function will be the only implementation of ```Execute()``` which will actually create a child process to execute the command. ```Execute()``` will return a 1 upon successful completion and 0 upon failure. ```Exit()``` will safely terminate all running processes.
+
+**Connector** :
+ * This will be another abstract class which all of the control operators will implement. The control operators will have the capacity to hold a collection of commands and/or one or more control operators.
+ * Control operator classes which will implement the Connector abstract class are:
+   * *And_Op*
+   * *Or_Op*
+   * *Semicol_Op*
+
+**And_Op** :
+ * This class will contain a collection of Command and/or Connector objects and will represent this collection as private members ```line_1``` & ```line_2```. The execute function will run both ``` line_1->Execute()``` and ``` line_1->Execute()``` regardless of their corresponding return value. The class’ execute function will return a 1 if and only if both line_1 and line_2 executions succeed. The exit function will call all of the children’s exit functions to safely terminate any running processes.
+
+**Or_Op** :
+ * This class will contain a collection of Command and/or Connector objects and will represent this collection as private members ```line_1``` & ```line_2```. The execute function will only run ```line_2->Execute()``` if ```line_1->Execute()``` fails (returns a 0). This class’ execute function will return a 1 if either ```line_1->Execute()``` or ```line_2->Execute()``` succeed. The exit function will call all of the children’s exit functions to safely terminate any running processes.
+
+**Semicol_Op**
+ * This class will contain a single Command and will represent it as private member ```line```. The execute function will run ```line->Execute()``` and will return the ```line->Execute()``` return value (1 upon completion and 0 otherwise). The exit function will call its child's exit function to safely terminate any running processes.
+
+# Prototypes/Research
+```c++
+#include <iostream>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <string>
+
+int main(int argv, char **argc) {
+
+        pid_t pid = fork();
+
+        if (pid == 0) {
+                printf("Child process id: %d\n", pid);
+                printf("Child: Running execvp()\n");
+
+                if (execvp(argc[1], (argc + 1)) == -1) {
+                // Pointer arithmetic used to shift argc pointer to actual
+                //   command that was passed rather than this main's executable
+                        
+                        printf("\n\nError in child process\n\n");
+                        perror(argc[1]);
+                }
+                std::cout << "\nChild: Process finished.\n\n"; // Anything beyond execvp will not run
+        }
+        if (pid > 0) {
+                printf("Parent process id: %d\n", pid);
+                printf("Parent: Waiting for child process to finish.\n");
+
+                pid_t pid_wait = waitpid(0, NULL, 0);
+
+                printf("pid_wait = %d\n\n", pid_wait);
+                if (pid_wait == -1) {
+                        perror("Parent");
+                } else {
+                        std::cout <<"\nParent: Child process completed\n\n";
+                }
+
+        }
+        return 0;
+}
+
+```
+**Steps Taken**:
+
+  * **Compile**: ``` g++ -std=c++11 few_prototype.cpp -o few_prototype ```
+
+  * **Run 1**: ``` ./few_prototype ls -l && echo prototype```
+
+  * **Output 1**: 
+  ``` 
+Parent process id: 9188                                                         
+Parent: Waiting for child process to finish.                                    
+Child process id: 0                                                             
+Child: Running execvp()                                                         
+total 40                                                                        
+-rwxr-xr-x 1 jgarc271 csmajs  9256 Apr 27 13:03 few_prototype                   
+-rw-r--r-- 1 jgarc271 csmajs   947 Apr 26 17:34 few_prototype.cpp               
+pid_wait = 9188                                                                 
+                                                                                
+                                                                                
+Parent: Child process completed                                                 
+                                                                                
+prototype
+```
+  * **Run 2**: ```./few_prototype la```
+
+  * **Output 2**: 
+``` 
+Parent process id: 12066                                                        
+Parent: Waiting for child process to finish.                                    
+Child process id: 0                                                             
+Child: Running execvp()                                                         
+                                                                                
+                                                                                
+Error in child process                                                         
+                                                                                
+la: No such file or directory                                                   
+                                                                                
+Child: Process finished.                                                        
+                                                                                
+pid_wait = 12066                                                                
+                                                                                
+                                                                                
+Parent: Child process completed                                                
+```
+* **Findings**:
+
+    * The waitpid function returns before the execvp finishes outputting its results to the standard output as seen in *Output 1*.
+
+      * **Use Case**: We can have the parent process perform other functionality while the child is done running but hasn’t outputted to the standard output.
+    * The execvp function returns a -1 upon an unsuccessful command as seen in *Output 2*.
+      * **Use Case**: We can implement any necessary logic within an if statement that checks for this value and performs any extra functionality that we may want to implement upon failure of a command.
+    * If the execvp function runs successfully, it terminates the child process therefore preventing the execution of any code that proceeds it.
+      * **Use Case**: Like in our previous finding (b), we can implement extra functionality. For example, after the execvp call, we may decide to prompt the user and ask if they would like to modify and rerun that specific command instead of having them input an entire command, or multiple commands in the case of the usage of connectors.
   
-  Ryan Meoni 
-  
-  Jorge L. Garcia 
-  
-# Assignment 4
-
-## Updates
-
-We could not make all the new IO redirection follow the same behavior as our '&&', '||', and ';' connectors. This led to the file descriptors being set for commands that were not intended. We created a solution using the decorator pattern that decorates any commands or other decorators with the desired IO functionality. This ensured that IO functionality corresponded to the correct command. We modified our logic in our infix to postfix function and postifx to expression tree function to track any commands appearing in parentheses. 
-
-The piping IO redirection symbol could not be a standard decorator in our model. This is because it needs two Base pointers in the class. In this case, the piping becomes just like the other connectors we had in assignment 2 and 3. We forked within the new 
-
-We fork() within the new IO redirection classes because we it gives us an efficient way of preserving the file descriptions when necessary. 
-
-The classes section is updated as well to reflect new additions. 
-
-# Diagram:
-![umlDiagram](/images/umlDiagram.png)
-
-
-# Classes:
-The parser logic is all handled in our main.cpp file. Once the expression tree is built from the postfix expression, you could call 'evaluate()' on the root node in the expression tree. This will execute all the command specificed with the precedence accounted for. 
-
-The commands class will have a vector that will store any flags that need to be passed. 
-
-The commands and connectors classes will inherit from an abstract base class. This class will have a pure virtual function called "evaluate()", which will return a 1 or a 0 and act similar to the function seen in Lab 3. The commands subclass will use this function to handle the logic of running its respective command. If the command runs successfully with the given flags, the function will return a 1. If unsuccessful, the function will return a 0. 
-
-The connectors subclasses will use the "evaluate()" function in their own way. This function will call "evaluate()" on it's left child, which is the command to the left of the connector. Depending on what connector we have encounted, we will either execute or not execute the right child depending on the return status of the left child. 
-
-Because we have three connectors, we will have three subclasses that inherit from the base class for each connector. The 'exit' command is handled in the Command class because it is a simple check of the command string. 
-
-We have a decorator class that is the parent class to our new IO classes. We have a class for each IO redirection. This means the IO redirection functionality demands five new class additions into our program. Each of these IO redirection classes utilize the fork(), waitpid() and execvp() functions seen previously in our commands class. 
-
-The piping class forks twice due to the left and right elements to the '|' symbol being commands. It is the only IO redirection class that forks twice. The others fork once. 
-
 
 # Development and Testing Roadmap
-  When working on the development of this assignment we came across few issues that we thought we should considered when writing its code. Here is the list of issues we thought we might run into in the future:
-  1) First, we need to create our base class representing the shell, since here is where we will reference everything to. 
-  2) Once we have our interface created we need to work on the classes that derive from our base/interface class such as: "Command" class and "connector" classes
-  3) Our plan on working on these classes is from the bottom down, since we want to provide a solid base for our RShell and then we start deriving each of the tasks. 
-  4) We know that as we build our RShell we will run into certain issues that might be caused by user input such as, optimally the user is supposed to write the connectors in the following  format: "||" or "&&" or ";", but what if they happened to enter a typo and our program wont know what to do with that erroneous input. For this reason we have to set some time to do some debugging and essentially consider all possible issues that might cause our RShell to crash or output data that's unwanted. 
-  5) Due to some of the issues that we might run into, we will have to create functions that will act as a safeguard to prevent the user from entering data that won't be recognized by the program. 
-  6) Note that as we progress through our RShell we must test each individual change that has been attached to the program. So, if we add any new functions and/or classes to the program we must make sure that it runs properly and outputs the correct data.
-  7) Now that we have tested the functions individually and we have covered the possible roadblocks, we can now test the program as a whole by integrating the functions and classes as one to make sure that it works properly.
-  8) Since we have now tested all the functions and classes individually and as a group, we should have by now tested that our program runs properly and we further test erroneous inputs to see how it behaves. By doing this we will make sure our program will efficiently take any input and respond depending on what the user wants it to do even when entering unwanted inputs.
+
+* **Development & Testing**:
+  1. Create the component base class ```Line```.
+  2. Create the leaf class ```Command```.
+     * **Test**: Run unit tests on this class once completed to test that commands and arguments can be passed correctly and that child processes are created and terminated appropriately.
+  3. Create the abstract composite class ```Connector```.
+  4. Create all of the composite classes ```And_Op```, ```Or_Op```, and ```Semicol_Op```.
+     * **Test**: Run unit tests on every composite class once completed to test that all of the logic runs correctly. We will also run integration tests to make sure that the classes properly integrate with ```Command``` classes and/or other ```Connector``` classes.
+  5. Create the parsing functions that will parse the user's input and create the object trees.
+     * **Test**: Run all of the necessary unit and integration tests to verify that trees are being properly formed and the interaction between these functions and the composite objects is as it should be.
+  6. Create the main function which will integrate all of the components of this project.
+     * **Test**: Run an extensive set of integration tests to ensure that everything is working as it should be.
