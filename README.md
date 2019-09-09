@@ -4,12 +4,12 @@
 
 # Introduction
 
-RShell is an interactive shell where the user inputs their command(s) and our program runs a series of parsing functions on the input which will create a composite object tree from that line of command(s). Once the tree is created the commands will be forked and ran in child processes. RShell has been implemented using the composite design pattern.
+This Bash Shell Clone is an interactive shell where the user inputs their command(s) and our program runs a series of parsing functions on the input which will create a composite object tree from that line of command(s). Once the tree is created the commands will be forked and ran in child processes. This shell has been implemented using the composite design pattern and the decorator pattern.
 
 
 # Diagram
 
-![Composite UML](/images/composite_UML.png)
+![Composite UML](/images/composite_uml.png)
 
 # Classes
 
