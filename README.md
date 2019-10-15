@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
                 if (execvp(argv[1], (argv + 1)) == -1) {
                 // Pointer arithmetic used to shift argv pointer to actual
-                //   command that was passed rather than this main's executable
+                //   command that was passed rather than this programs's executable
                         
                         printf("\n\nError in child process\n\n");
                         perror(argv[1]);
