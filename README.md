@@ -46,7 +46,7 @@ This Bash Shell Clone is an interactive shell where the user inputs their comman
 #include <cstring>
 #include <string>
 
-int main(int argv, char **argc) {
+int main(int argc, char **argv) {
 
         pid_t pid = fork();
 
@@ -54,12 +54,12 @@ int main(int argv, char **argc) {
                 printf("Child process id: %d\n", pid);
                 printf("Child: Running execvp()\n");
 
-                if (execvp(argc[1], (argc + 1)) == -1) {
-                // Pointer arithmetic used to shift argc pointer to actual
+                if (execvp(argv[1], (argv + 1)) == -1) {
+                // Pointer arithmetic used to shift argv pointer to actual
                 //   command that was passed rather than this main's executable
                         
                         printf("\n\nError in child process\n\n");
-                        perror(argc[1]);
+                        perror(argv[1]);
                 }
                 std::cout << "\nChild: Process finished.\n\n"; // Anything beyond execvp will not run
         }
