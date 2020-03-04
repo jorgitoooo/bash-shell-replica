@@ -1,6 +1,4 @@
 # Bash Shell Clone 
-## Developed by: Jorge L. Garcia & Ryan Meoni
-#
 
 # Introduction
 
